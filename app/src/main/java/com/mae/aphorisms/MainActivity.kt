@@ -9,6 +9,7 @@ import android.view.HapticFeedbackConstants
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.activity.enableEdgeToEdge
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -38,6 +39,7 @@ import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -57,6 +59,7 @@ import kotlin.math.abs
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        enableEdgeToEdge()
         setContent {
             AphorismsApp()
         }
@@ -91,7 +94,7 @@ private fun AphorismsScreen(vm: AphorismsViewModel = viewModel(factory = Aphoris
     val navEnabled by vm.navigationEnabled.collectAsState()
     val view = LocalView.current
     val ctx = LocalContext.current
-    val loraFont = FontFamily(Font(R.font.lora))
+    val loraFont = remember { FontFamily(Font(R.font.lora)) }
 
     Scaffold(modifier = Modifier.fillMaxSize()) { padding ->
         Column(
@@ -107,10 +110,17 @@ private fun AphorismsScreen(vm: AphorismsViewModel = viewModel(factory = Aphoris
                     .fillMaxWidth()
                     .heightIn(min = 160.dp)
                     .pointerInput(navEnabled) {
-                        detectHorizontalDragGestures { _, dragAmount ->
-                            if (navEnabled && !vm.isTransitioning && abs(dragAmount) > 50f) {
+                        var totalDrag = 0f
+                        detectHorizontalDragGestures(
+                            onDragStart = { totalDrag = 0f },
+                            onDragEnd = { totalDrag = 0f },
+                            onDragCancel = { totalDrag = 0f }
+                        ) { _, dragAmount ->
+                            totalDrag += dragAmount
+                            if (navEnabled && !vm.isTransitioning && abs(totalDrag) > 80f) {
                                 view.performHapticFeedback(HapticFeedbackConstants.VIRTUAL_KEY)
-                                vm.advance(if (dragAmount < 0) +1 else -1)
+                                vm.advance(if (totalDrag < 0) +1 else -1)
+                                totalDrag = 0f
                             }
                         }
                     },
