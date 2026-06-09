@@ -5,6 +5,8 @@ import android.content.ClipboardManager
 import android.content.Context
 import android.os.Build
 import android.os.Bundle
+import android.view.HapticFeedbackConstants
+import android.view.View
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -40,10 +42,9 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
@@ -89,7 +90,7 @@ private fun AphorismsScreen(vm: AphorismsViewModel = viewModel()) {
     val current by vm.current.collectAsState()
     val counter by vm.counter.collectAsState()
     val navEnabled by vm.navigationEnabled.collectAsState()
-    val haptic = LocalHapticFeedback.current
+    val view = LocalView.current
     val ctx = LocalContext.current
     val loraFont = FontFamily(Font(R.font.lora))
 
@@ -109,7 +110,7 @@ private fun AphorismsScreen(vm: AphorismsViewModel = viewModel()) {
                     .pointerInput(navEnabled) {
                         detectHorizontalDragGestures { _, dragAmount ->
                             if (navEnabled && !vm.isTransitioning && abs(dragAmount) > 50f) {
-                                haptic.performHapticFeedback(HapticFeedbackType.VirtualKey)
+                                view.performHapticFeedback(HapticFeedbackConstants.VIRTUAL_KEY)
                                 vm.advance(if (dragAmount < 0) +1 else -1)
                             }
                         }
@@ -164,7 +165,7 @@ private fun AphorismsScreen(vm: AphorismsViewModel = viewModel()) {
             OutlinedButton(
                 onClick = {
                     if (navEnabled && !vm.isTransitioning) {
-                        haptic.performHapticFeedback(HapticFeedbackType.VirtualKey)
+                        view.performHapticFeedback(HapticFeedbackConstants.VIRTUAL_KEY)
                         vm.advance(+1)
                     }
                 },
