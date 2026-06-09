@@ -5,6 +5,7 @@ import android.content.ClipboardManager
 import android.content.Context
 import android.os.Build
 import android.os.Bundle
+import android.util.Log
 import android.view.HapticFeedbackConstants
 import android.widget.Toast
 import androidx.activity.ComponentActivity
@@ -47,7 +48,6 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.text.TextStyle
-import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -55,6 +55,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import kotlin.math.abs
+import org.json.JSONArray
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -88,13 +89,14 @@ private fun AphorismsApp() {
 }
 
 @Composable
-private fun AphorismsScreen(vm: AphorismsViewModel = viewModel(factory = AphorismsViewModel.Factory)) {
+private fun AphorismsScreen() {
+    val ctx = LocalContext.current
+    val aphorisms = remember { loadAphorisms(ctx) }
+    val vm: AphorismsViewModel = viewModel { AphorismsViewModel(aphorisms) }
     val current by vm.current.collectAsState()
     val counter by vm.counter.collectAsState()
     val navEnabled by vm.navigationEnabled.collectAsState()
     val view = LocalView.current
-    val ctx = LocalContext.current
-    val loraFont = remember { FontFamily(Font(R.font.lora)) }
 
     Scaffold(modifier = Modifier.fillMaxSize()) { padding ->
         Column(
@@ -143,7 +145,7 @@ private fun AphorismsScreen(vm: AphorismsViewModel = viewModel(factory = Aphoris
                         Text(
                             text = text,
                             style = TextStyle(
-                                fontFamily = loraFont,
+                                fontFamily = FontFamily.Serif,
                                 fontSize = 24.sp,
                                 textAlign = TextAlign.Center
                             ),
@@ -183,6 +185,17 @@ private fun AphorismsScreen(vm: AphorismsViewModel = viewModel(factory = Aphoris
                 Text("Next")
             }
         }
+    }
+}
+
+private fun loadAphorisms(ctx: Context): List<String> {
+    return try {
+        val json = ctx.assets.open("aphorisms.json").bufferedReader().use { it.readText() }
+        val arr = JSONArray(json)
+        List(arr.length()) { i -> arr.getString(i) }.filter { it.isNotEmpty() }
+    } catch (e: Exception) {
+        Log.w("AphorismsMAE", "Failed to load aphorisms.json: ${e.message}")
+        AphorismsViewModel.FALLBACK_APHORISMS
     }
 }
 

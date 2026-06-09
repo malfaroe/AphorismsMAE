@@ -1,39 +1,16 @@
 package com.mae.aphorisms
 
-import android.app.Application
-import android.util.Log
-import androidx.lifecycle.AndroidViewModel
-import androidx.lifecycle.SavedStateHandle
-import androidx.lifecycle.ViewModelProvider
-import androidx.lifecycle.createSavedStateHandle
+import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import androidx.lifecycle.viewmodel.initializer
-import androidx.lifecycle.viewmodel.viewModelFactory
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
-import org.json.JSONArray
 
-class AphorismsViewModel(
-    app: Application,
-    private val state: SavedStateHandle
-) : AndroidViewModel(app) {
+class AphorismsViewModel(aphorisms: List<String>) : ViewModel() {
 
     companion object {
-        private const val KEY_LIST = "shuffled_list"
-        private const val KEY_INDEX = "current_index"
-        private const val TAG = "AphorismsMAE"
-
-        val Factory: ViewModelProvider.Factory = viewModelFactory {
-            initializer {
-                val app = this[ViewModelProvider.AndroidViewModelFactory.APPLICATION_KEY]!!
-                val state = createSavedStateHandle()
-                AphorismsViewModel(app, state)
-            }
-        }
-
-        private val FALLBACK_APHORISMS = arrayListOf(
+        val FALLBACK_APHORISMS = listOf(
             "A beginning is invisible.",
             "A decision changes the world.",
             "Attention is the prime tool of any line of craft.",
@@ -63,44 +40,16 @@ class AphorismsViewModel(
     private val _counter = MutableStateFlow("")
     val counter: StateFlow<String> = _counter
 
-    private val _navigationEnabled = MutableStateFlow(true)
+    private val _navigationEnabled = MutableStateFlow(aphorisms.size >= 2)
     val navigationEnabled: StateFlow<Boolean> = _navigationEnabled
 
     var isTransitioning = false
         private set
 
-    private var shuffledList: ArrayList<String>
-        get() = state[KEY_LIST] ?: ArrayList()
-        set(v) { state[KEY_LIST] = v }
-
-    private var currentIndex: Int
-        get() = state[KEY_INDEX] ?: -1
-        set(v) { state[KEY_INDEX] = v }
+    private var shuffledList: List<String> = fisherYates(aphorisms)
+    private var currentIndex: Int = 0
 
     init {
-        if (shuffledList.isEmpty()) {
-            load()
-        } else {
-            updateDisplay()
-        }
-    }
-
-    private fun load() {
-        val list = try {
-            val json = getApplication<Application>().assets.open("aphorisms.json")
-                .bufferedReader().use { it.readText() }
-            val arr = JSONArray(json)
-            ArrayList<String>().apply {
-                for (i in 0 until arr.length()) add(arr.getString(i))
-            }.also { if (it.isEmpty()) throw IllegalStateException("empty") }
-        } catch (e: Exception) {
-            Log.w(TAG, "aphorisms.json unavailable, using fallback: ${e.message}")
-            ArrayList(FALLBACK_APHORISMS)
-        }
-
-        shuffledList = fisherYates(list)
-        currentIndex = 0
-        _navigationEnabled.value = list.size >= 2
         updateDisplay()
     }
 
@@ -139,8 +88,8 @@ class AphorismsViewModel(
         _navigationEnabled.value = list.size >= 2
     }
 
-    private fun fisherYates(input: ArrayList<String>): ArrayList<String> {
-        val list = ArrayList(input)
+    private fun fisherYates(input: List<String>): List<String> {
+        val list = input.toMutableList()
         for (i in list.size - 1 downTo 1) {
             val j = (Math.random() * (i + 1)).toInt()
             val tmp = list[i]; list[i] = list[j]; list[j] = tmp
