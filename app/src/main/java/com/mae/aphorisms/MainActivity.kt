@@ -12,12 +12,13 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.togetherWith
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.gestures.detectTapGestures
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -25,18 +26,12 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.darkColorScheme
-import androidx.compose.material3.dynamicDarkColorScheme
-import androidx.compose.material3.dynamicLightColorScheme
-import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -49,6 +44,8 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.googlefonts.Font
+import androidx.compose.ui.text.googlefonts.GoogleFont
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -57,34 +54,25 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import kotlin.math.abs
 import org.json.JSONArray
 
+private val fontProvider = GoogleFont.Provider(
+    providerAuthority = "com.google.android.gms.fonts",
+    providerPackage = "com.google.android.gms",
+    certificates = R.array.com_google_android_gms_fonts_certs
+)
+
+private val interFontFamily = FontFamily(
+    Font(googleFont = GoogleFont("Inter"), fontProvider = fontProvider)
+)
+
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
-            AphorismsApp()
+            MaterialTheme {
+                AphorismsScreen()
+            }
         }
-    }
-}
-
-@Composable
-private fun AphorismsApp() {
-    val ctx = LocalContext.current
-    val isDark = isSystemInDarkTheme()
-    val colorScheme = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-        if (isDark) dynamicDarkColorScheme(ctx) else dynamicLightColorScheme(ctx)
-    } else {
-        if (isDark) darkColorScheme(
-            background = Color(0xFF1C1B1F),
-            surface = Color(0xFF2B2930)
-        ) else lightColorScheme(
-            background = Color(0xFFFAF6EF),
-            onBackground = Color(0xFF1C1B1F)
-        )
-    }
-
-    MaterialTheme(colorScheme = colorScheme) {
-        AphorismsScreen()
     }
 }
 
@@ -94,23 +82,24 @@ private fun AphorismsScreen() {
     val aphorisms = remember { loadAphorisms(ctx) }
     val vm: AphorismsViewModel = viewModel { AphorismsViewModel(aphorisms) }
     val current by vm.current.collectAsState()
-    val counter by vm.counter.collectAsState()
     val navEnabled by vm.navigationEnabled.collectAsState()
     val view = LocalView.current
 
-    Scaffold(modifier = Modifier.fillMaxSize()) { padding ->
+    Scaffold(
+        modifier = Modifier.fillMaxSize(),
+        containerColor = Color.Black
+    ) { padding ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
-                .padding(horizontal = 24.dp),
+                .padding(horizontal = 32.dp),
             verticalArrangement = Arrangement.Center,
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Card(
+            Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .heightIn(min = 160.dp)
                     .pointerInput(navEnabled) {
                         var totalDrag = 0f
                         detectHorizontalDragGestures(
@@ -126,52 +115,38 @@ private fun AphorismsScreen() {
                             }
                         }
                     },
-                elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+                contentAlignment = Alignment.Center
             ) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(24.dp),
-                    contentAlignment = Alignment.Center
-                ) {
-                    AnimatedContent(
-                        targetState = current,
-                        transitionSpec = {
-                            fadeIn(animationSpec = androidx.compose.animation.core.tween(300))
-                                .togetherWith(fadeOut(animationSpec = androidx.compose.animation.core.tween(300)))
-                        },
-                        label = "aphorism"
-                    ) { text ->
-                        Text(
-                            text = text,
-                            style = TextStyle(
-                                fontFamily = FontFamily.Serif,
-                                fontSize = 24.sp,
-                                textAlign = TextAlign.Center
-                            ),
-                            maxLines = 8,
-                            overflow = TextOverflow.Ellipsis,
-                            modifier = Modifier.pointerInput(text) {
+                AnimatedContent(
+                    targetState = current,
+                    transitionSpec = {
+                        fadeIn(tween(300)).togetherWith(fadeOut(tween(300)))
+                    },
+                    label = "aphorism"
+                ) { text ->
+                    Text(
+                        text = text,
+                        style = TextStyle(
+                            fontFamily = interFontFamily,
+                            fontSize = 26.sp,
+                            textAlign = TextAlign.Center,
+                            color = Color.White,
+                            lineHeight = 36.sp
+                        ),
+                        maxLines = 10,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .pointerInput(text) {
                                 detectTapGestures(onLongPress = {
                                     copyToClipboard(ctx, text)
                                 })
                             }
-                        )
-                    }
+                    )
                 }
             }
 
-            Spacer(modifier = Modifier.height(8.dp))
-
-            if (counter.isNotEmpty()) {
-                Text(
-                    text = counter,
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
-                )
-            }
-
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(56.dp))
 
             OutlinedButton(
                 onClick = {
@@ -180,9 +155,15 @@ private fun AphorismsScreen() {
                         vm.advance(+1)
                     }
                 },
-                enabled = navEnabled
+                enabled = navEnabled,
+                colors = ButtonDefaults.outlinedButtonColors(contentColor = Color.White),
+                border = BorderStroke(1.dp, Color.White.copy(alpha = 0.35f))
             ) {
-                Text("Next")
+                Text(
+                    text = "NEW",
+                    fontFamily = interFontFamily,
+                    letterSpacing = 4.sp
+                )
             }
         }
     }

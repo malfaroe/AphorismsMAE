@@ -37,11 +37,8 @@ class AphorismsViewModel(aphorisms: List<String>) : ViewModel() {
     private val _current = MutableStateFlow("")
     val current: StateFlow<String> = _current
 
-    private val _counter = MutableStateFlow("")
-    val counter: StateFlow<String> = _counter
-
-    private val _navigationEnabled = MutableStateFlow(aphorisms.size >= 2)
-    val navigationEnabled: StateFlow<Boolean> = _navigationEnabled
+    private val _enabled = MutableStateFlow(aphorisms.size >= 2)
+    val navigationEnabled: StateFlow<Boolean> = _enabled
 
     var isTransitioning = false
         private set
@@ -50,13 +47,15 @@ class AphorismsViewModel(aphorisms: List<String>) : ViewModel() {
     private var currentIndex: Int = 0
 
     init {
-        updateDisplay()
+        if (shuffledList.isNotEmpty()) {
+            _current.value = shuffledList[0]
+        }
     }
 
     fun advance(delta: Int) {
         if (isTransitioning) return
         val list = shuffledList
-        if (list.size < 2) return
+        if (list.isEmpty()) return
 
         isTransitioning = true
         viewModelScope.launch {
@@ -68,24 +67,10 @@ class AphorismsViewModel(aphorisms: List<String>) : ViewModel() {
                 idx = list.size - 1
             }
             currentIndex = idx
-            updateDisplay()
+            _current.value = shuffledList[idx]
             delay(300)
             isTransitioning = false
         }
-    }
-
-    private fun updateDisplay() {
-        val list = shuffledList
-        if (list.isEmpty()) {
-            _current.value = "Honour necessity. Honour sufficiency."
-            _counter.value = ""
-            _navigationEnabled.value = false
-            return
-        }
-        val idx = currentIndex.coerceIn(0, list.size - 1)
-        _current.value = list[idx]
-        _counter.value = if (list.size >= 2) "${idx + 1} / ${list.size}" else ""
-        _navigationEnabled.value = list.size >= 2
     }
 
     private fun fisherYates(input: List<String>): List<String> {
