@@ -6,7 +6,6 @@ import android.content.Context
 import android.os.Build
 import android.os.Bundle
 import android.view.HapticFeedbackConstants
-import android.view.View
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -86,7 +85,7 @@ private fun AphorismsApp() {
 }
 
 @Composable
-private fun AphorismsScreen(vm: AphorismsViewModel = viewModel()) {
+private fun AphorismsScreen(vm: AphorismsViewModel = viewModel(factory = AphorismsViewModel.Factory)) {
     val current by vm.current.collectAsState()
     val counter by vm.counter.collectAsState()
     val navEnabled by vm.navigationEnabled.collectAsState()

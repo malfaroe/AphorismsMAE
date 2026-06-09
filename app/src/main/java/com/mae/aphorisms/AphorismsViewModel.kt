@@ -4,7 +4,10 @@ import android.app.Application
 import android.util.Log
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.SavedStateHandle
+import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
+import androidx.lifecycle.viewmodel.initializer
+import androidx.lifecycle.viewmodel.viewModelFactory
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -20,6 +23,14 @@ class AphorismsViewModel(
         private const val KEY_LIST = "shuffled_list"
         private const val KEY_INDEX = "current_index"
         private const val TAG = "AphorismsMAE"
+
+        val Factory: ViewModelProvider.Factory = viewModelFactory {
+            initializer {
+                val app = this[ViewModelProvider.AndroidViewModelFactory.APPLICATION_KEY]!!
+                val state = createSavedStateHandle()
+                AphorismsViewModel(app, state)
+            }
+        }
 
         private val FALLBACK_APHORISMS = arrayListOf(
             "A beginning is invisible.",
